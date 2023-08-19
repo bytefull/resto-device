@@ -9,13 +9,15 @@
 #include "queue.h"
 #include "event_groups.h"
 
-#define SERIAL_BAUDRATE    (115200)
+#define SERIAL_BAUDRATE          (115200)
 
-#define MFRC522_RST_PIN    (5)
-#define MFRC522_SPI_SS_PIN (10)
-#define MFRC522_IRQ_PIN    (1)
+#define MFRC522_RST_PIN          (5)
+#define MFRC522_SPI_SS_PIN       (10)
+#define MFRC522_IRQ_PIN          (1)
 
-#define BUZZER_PIN         (0)
+#define BUZZER_PIN               (0)
+#define BUZZER_TONE_DURATION_MS  (1000)
+#define BUZZER_TONE_FREQUENCY_HZ (1000)
 
 static void vTask1(void *pvParameters);
 static void vTask2(void *pvParameters);
@@ -77,7 +79,7 @@ void loop() {
     mfrc522.PICC_HaltA();
     cardDetected = false;
 
-    tone(BUZZER_PIN, 1000, 1000);
+    tone(BUZZER_PIN, BUZZER_TONE_FREQUENCY_HZ, BUZZER_TONE_DURATION_MS);
   }
 
   // Activate reception
