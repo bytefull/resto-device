@@ -15,6 +15,8 @@
 #define MFRC522_SPI_SS_PIN (10)
 #define MFRC522_IRQ_PIN    (1)
 
+#define BUZZER_PIN         (0)
+
 static void vTask1(void *pvParameters);
 static void vTask2(void *pvParameters);
 static void vTask3(void *pvParameters);
@@ -74,6 +76,8 @@ void loop() {
     mfrc522.PCD_WriteRegister(mfrc522.ComIrqReg, 0x7F);
     mfrc522.PICC_HaltA();
     cardDetected = false;
+
+    tone(BUZZER_PIN, 1000, 1000);
   }
 
   // Activate reception
