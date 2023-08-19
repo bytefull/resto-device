@@ -25,9 +25,9 @@ static void vTask3(void *pvParameters);
 
 static void onCardDetected(void);
 
-MFRC522 mfrc522(MFRC522_SPI_SS_PIN, MFRC522_RST_PIN);
-byte registerValue = 0x7F;
-volatile bool cardDetected = false;
+static MFRC522 mfrc522(MFRC522_SPI_SS_PIN, MFRC522_RST_PIN);
+static byte registerValue = 0x7F;
+static volatile bool cardDetected = false;
 
 void setup() {
   pinMode(LED_RED, OUTPUT);
@@ -35,7 +35,6 @@ void setup() {
   pinMode(LED_BLUE, OUTPUT);
 
   Serial.begin(SERIAL_BAUDRATE);
-  Serial.println("Hello world!");
 
   xTaskCreate(vTask1, "Task 1", 1024, NULL, 1, NULL);
   xTaskCreate(vTask2, "Task 2", 1024, NULL, 1, NULL);
@@ -43,9 +42,9 @@ void setup() {
 
   SPI.begin();
   mfrc522.PCD_Init();
-  
+
   // Read and printout the MFRC522 version (valid values are 0x91 and 0x92)
-  Serial.print("Ver: 0x");
+  Serial.print("Version: 0x");
   byte readReg = mfrc522.PCD_ReadRegister(mfrc522.VersionReg);
   Serial.println(readReg, HEX);
 
@@ -61,16 +60,16 @@ void setup() {
 }
 
 void loop() {
-  Serial.println("Looping...");
+  byte byteIndex;
 
   if (cardDetected) {
     // Once card is detected read its UID
     Serial.println("Card detected");
     mfrc522.PICC_ReadCardSerial();
     Serial.print(F("Card UID: "));
-    for (byte i = 0; i < mfrc522.uid.size; i++) {
-      Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
-      Serial.print(mfrc522.uid.uidByte[i], HEX);
+    for (byteIndex = 0; byteIndex < mfrc522.uid.size; byteIndex++) {
+      Serial.print(mfrc522.uid.uidByte[byteIndex] < 0x10 ? " 0" : " ");
+      Serial.print(mfrc522.uid.uidByte[byteIndex], HEX);
     }
     Serial.println();
 
@@ -101,38 +100,32 @@ void vApplicationStackOverflowHook(xTaskHandle *pxTask, signed portCHAR *pcTaskN
 }
 
 static void vTask1(void *pvParameters) {
-  const TickType_t xDelayInMs = pdMS_TO_TICKS(500);
+  const TickType_t xDelay = pdMS_TO_TICKS(500);
 
   Serial.println("Started Task 1");
-  for(;;)
-  {
-    // Serial.println("Running Task 1...");
+  for(;;) {
     digitalToggle(LED_RED);
-    vTaskDelay(xDelayInMs);
+    vTaskDelay(xDelay);
   }
 }
 
 static void vTask2(void *pvParameters) {
-  const TickType_t xDelayInMs = pdMS_TO_TICKS(500);
+  const TickType_t xDelay = pdMS_TO_TICKS(500);
 
   Serial.println("Started Task 2");
-  for(;;)
-  {
-    // Serial.println("Running Task 2...");
+  for(;;) {
     digitalToggle(LED_GREEN);
-    vTaskDelay(xDelayInMs);
+    vTaskDelay(xDelay);
   }
 }
 
 static void vTask3(void *pvParameters) {
-  const TickType_t xDelayInMs = pdMS_TO_TICKS(1000);
+  const TickType_t xDelay = pdMS_TO_TICKS(1000);
 
   Serial.println("Started Task 3");
-  for(;;)
-  {
-    // Serial.println("Running Task 3...");
+  for(;;) {
     digitalToggle(LED_BLUE);
-    vTaskDelay(xDelayInMs);
+    vTaskDelay(xDelay);
   }
 }
 
