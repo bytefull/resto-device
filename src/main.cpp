@@ -2,6 +2,7 @@
 #include <SPI.h>
 
 #include "MFRC522.h"
+#include "Led.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -30,10 +31,6 @@ static byte registerValue = 0x7F;
 static volatile bool cardDetected = false;
 
 void setup() {
-  pinMode(LED_RED, OUTPUT);
-  pinMode(LED_GREEN, OUTPUT);
-  pinMode(LED_BLUE, OUTPUT);
-
   Serial.begin(SERIAL_BAUDRATE);
 
   xTaskCreate(vTask1, "Task 1", 1024, NULL, 1, NULL);
@@ -101,30 +98,33 @@ void vApplicationStackOverflowHook(xTaskHandle *pxTask, signed portCHAR *pcTaskN
 
 static void vTask1(void *pvParameters) {
   const TickType_t xDelay = pdMS_TO_TICKS(500);
+  Led redLED(LED_RED);
 
   Serial.println("Started Task 1");
   for(;;) {
-    digitalToggle(LED_RED);
+    redLED.blink(100);
     vTaskDelay(xDelay);
   }
 }
 
 static void vTask2(void *pvParameters) {
   const TickType_t xDelay = pdMS_TO_TICKS(500);
+  Led greenLED(LED_GREEN);
 
   Serial.println("Started Task 2");
   for(;;) {
-    digitalToggle(LED_GREEN);
+    greenLED.blink(100);
     vTaskDelay(xDelay);
   }
 }
 
 static void vTask3(void *pvParameters) {
   const TickType_t xDelay = pdMS_TO_TICKS(1000);
+  Led blueLED(LED_BLUE);
 
   Serial.println("Started Task 3");
   for(;;) {
-    digitalToggle(LED_BLUE);
+    blueLED.blink(100);
     vTaskDelay(xDelay);
   }
 }
