@@ -1,6 +1,16 @@
 # resto-device
 Embedded project for resto card reader
 
+### Wiring
+
+```mermaid
+sequenceDiagram
+Alice ->> Bob: Hello Bob, how are you?
+Alice ->> Bob: Hello Bob, how are you?
+Alice ->> Bob: Hello Bob, how are you?
+Note right of John: Bob thinks a long<br/>long time, so long<br/>that the text does<br/>not fit on a row.
+```
+
 ### Final application vision
 ``` C
 // Clean code
