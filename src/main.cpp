@@ -77,13 +77,11 @@ static void cardReaderTask(void *pvParameters) {
   logger.i(TAG, "Started Card Reader Task");
   for(;;) {
     if (cardDetected) {
-      cardDetected = false;
-
       // Once card is detected read its UID
       logger.i(TAG, "Card detected");
       logger.d(TAG, "detectionCounter: %lu\r\n", detectionCounter);
       mfrc522.PICC_ReadCardSerial();
-      Serial.print(F("Card UID: "));
+      Serial.print("Card UID: ");
       for (byteIndex = 0; byteIndex < mfrc522.uid.size; byteIndex++) {
         Serial.print(mfrc522.uid.uidByte[byteIndex] < 0x10 ? " 0" : " ");
         Serial.print(mfrc522.uid.uidByte[byteIndex], HEX);
@@ -93,6 +91,7 @@ static void cardReaderTask(void *pvParameters) {
       // Clear pending interrupt
       mfrc522.PCD_WriteRegister(mfrc522.ComIrqReg, 0x7F);
       mfrc522.PICC_HaltA();
+      cardDetected = false;
 
       // Make a sound
       buzzer.beep(BUZZER_BEEP_DURATION_MS);
