@@ -5,10 +5,9 @@ Embedded project for resto card reader
 
 ```mermaid
 sequenceDiagram
-Alice ->> Bob: Hello Bob, how are you?
-Alice ->> Bob: Hello Bob, how are you?
-Alice ->> Bob: Hello Bob, how are you?
-Note right of John: Bob thinks a long<br/>long time, so long<br/>that the text does<br/>not fit on a row.
+NUCLEO ->> MFRC522: SDA
+NUCLEO ->> MFRC522: SCK
+NUCLEO ->> MFRC522: VCC
 ```
 
 ### Final application vision
