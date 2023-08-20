@@ -5,7 +5,7 @@ Embedded project for resto card reader
 
 ```mermaid
 sequenceDiagram
-NUCLEO ->> MFRC522: SDA
+NUCLEO ->> MFRC522: SDA SDA
 NUCLEO ->> MFRC522: SCK
 NUCLEO ->> MFRC522: VCC
 ```
