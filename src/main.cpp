@@ -1,8 +1,9 @@
 #include <Arduino.h>
 #include <SPI.h>
 
-#include "MFRC522.h"
 #include "Led.h"
+#include "Buzzer.h"
+#include "MFRC522.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -17,7 +18,7 @@
 #define MFRC522_IRQ_PIN          (1)
 
 #define BUZZER_PIN               (0)
-#define BUZZER_TONE_DURATION_MS  (1000)
+#define BUZZER_BEEP_DURATION_MS  (1000)
 #define BUZZER_TONE_FREQUENCY_HZ (1000)
 
 static void vTask1(void *pvParameters);
@@ -27,6 +28,7 @@ static void vTask3(void *pvParameters);
 static void onCardDetected(void);
 
 static MFRC522 mfrc522(MFRC522_SPI_SS_PIN, MFRC522_RST_PIN);
+static Buzzer buzzer(BUZZER_PIN);
 static byte registerValue = 0x7F;
 static volatile bool cardDetected = false;
 
@@ -75,7 +77,7 @@ void loop() {
     mfrc522.PICC_HaltA();
     cardDetected = false;
 
-    tone(BUZZER_PIN, BUZZER_TONE_FREQUENCY_HZ, BUZZER_TONE_DURATION_MS);
+    buzzer.beep(BUZZER_BEEP_DURATION_MS);
   }
 
   // Activate reception
@@ -102,7 +104,7 @@ static void vTask1(void *pvParameters) {
 
   Serial.println("Started Task 1");
   for(;;) {
-    redLED.blink(100);
+    redLED.toggle();
     vTaskDelay(xDelay);
   }
 }
@@ -113,7 +115,7 @@ static void vTask2(void *pvParameters) {
 
   Serial.println("Started Task 2");
   for(;;) {
-    greenLED.blink(100);
+    greenLED.toggle();
     vTaskDelay(xDelay);
   }
 }
@@ -124,7 +126,7 @@ static void vTask3(void *pvParameters) {
 
   Serial.println("Started Task 3");
   for(;;) {
-    blueLED.blink(100);
+    blueLED.toggle();
     vTaskDelay(xDelay);
   }
 }
