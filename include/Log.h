@@ -3,6 +3,8 @@
 
 #include <Arduino.h>
 #include <stdarg.h>
+#include "FreeRTOS.h"
+#include "semphr.h"
 
 typedef struct {
   const char *level;
@@ -12,6 +14,7 @@ typedef struct {
 class Log {
 public:
   Log(HardwareSerial *serial);
+  void setup(unsigned long baudrate);
   void test(const char *tag, const char *format, ...);
   void d(const char *tag, const char *format, ...);
   void i(const char *tag, const char *format, ...);
@@ -20,6 +23,7 @@ public:
 
 private:
   HardwareSerial *_serial;
+  SemaphoreHandle_t _mutex;
   void printLog(const char *level, const char *tag, const char *format, va_list args);
   const char *getColor(const char *level);
 };

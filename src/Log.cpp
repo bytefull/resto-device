@@ -1,18 +1,29 @@
 #include <Arduino.h>
 #include "Log.h"
+#include "FreeRTOS.h"
 
-config_t config[] =
-{
-    {"TEST",    "\033[1;35m"},
-    {"DEBUG",   "\033[1;36m"},
-    {"INFO",    "\033[1;32m"},
-    {"WARNING", "\033[1;33m"},
-    {"ERROR",   "\033[1;31m"},
+#define COLOR_MAGENTA "\033[1;35m"
+#define COLOR_CYAN    "\033[1;36m"
+#define COLOR_GREEN   "\033[1;32m"
+#define COLOR_YELLOW  "\033[1;33m"
+#define COLOR_RED     "\033[1;31m"
+
+const config_t config[] = {
+  {"TEST",    COLOR_MAGENTA},
+  {"DEBUG",   COLOR_CYAN   },
+  {"INFO",    COLOR_GREEN  },
+  {"WARNING", COLOR_YELLOW },
+  {"ERROR",   COLOR_RED    },
 };
 
 Log::Log(HardwareSerial *serial) {
   _serial = serial;
-  _serial->begin(115200);
+}
+
+void Log::setup(unsigned long baudrate) {
+  _serial->begin(baudrate);
+  while (!(_serial->availableForWrite()));
+  _mutex = xSemaphoreCreateMutex();
 }
 
 void Log::test(const char *tag, const char *format, ...) {
@@ -56,6 +67,8 @@ void Log::e(const char *tag, const char *format, ...) {
 }
 
 void Log::printLog(const char *level, const char *tag, const char *format, va_list args) {
+  xSemaphoreTake(_mutex, portMAX_DELAY);
+
   // Get the color associated with the level
   const char *color = getColor(level);
 
@@ -66,6 +79,8 @@ void Log::printLog(const char *level, const char *tag, const char *format, va_li
 
   // Reset color
   _serial->printf("\033[0m");
+
+  xSemaphoreGive(_mutex);
 }
 
 const char* Log::getColor(const char *level) {
