@@ -7,7 +7,6 @@ class Led {
 
 public:
   Led(int pin);
-  void blink(int blinkRate);
   void on();
   void off();
   void toggle();

@@ -6,13 +6,6 @@ Led::Led(int pin) {
   _pin = pin;
 }
 
-void Led::blink(int blinkRate) {
-  digitalWrite(_pin, HIGH);
-  delay(blinkRate);
-  digitalWrite(_pin, LOW);
-  delay(blinkRate);
-}
-
 void Led::on() {
   digitalWrite(_pin, HIGH);
 }
