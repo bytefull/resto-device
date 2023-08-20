@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <SPI.h>
 
+#include "Log.h"
 #include "Led.h"
 #include "Buzzer.h"
 #include "MFRC522.h"
@@ -29,8 +30,12 @@ static void onCardDetected(void);
 
 static MFRC522 mfrc522(MFRC522_SPI_SS_PIN, MFRC522_RST_PIN);
 static Buzzer buzzer(BUZZER_PIN);
+static Log logger(&Serial);
 static byte registerValue = 0x7F;
 static volatile bool cardDetected = false;
+static volatile uint32_t detectionCounter = 0;
+
+const char *TAG = "MAIN";
 
 void setup() {
   Serial.begin(SERIAL_BAUDRATE);
@@ -43,9 +48,7 @@ void setup() {
   mfrc522.PCD_Init();
 
   // Read and printout the MFRC522 version (valid values are 0x91 and 0x92)
-  Serial.print("Version: 0x");
-  byte readReg = mfrc522.PCD_ReadRegister(mfrc522.VersionReg);
-  Serial.println(readReg, HEX);
+  logger.i(TAG, "Version: 0x%X", mfrc522.PCD_ReadRegister(mfrc522.VersionReg));
 
   pinMode(MFRC522_IRQ_PIN, INPUT_PULLUP);
 
@@ -62,8 +65,11 @@ void loop() {
   byte byteIndex;
 
   if (cardDetected) {
+    cardDetected = false;
+
     // Once card is detected read its UID
-    Serial.println("Card detected");
+    logger.i(TAG, "Card detected");
+    logger.d(TAG, "detectionCounter: %lu\r\n", detectionCounter);
     mfrc522.PICC_ReadCardSerial();
     Serial.print(F("Card UID: "));
     for (byteIndex = 0; byteIndex < mfrc522.uid.size; byteIndex++) {
@@ -75,8 +81,8 @@ void loop() {
     // Clear pending interrupt
     mfrc522.PCD_WriteRegister(mfrc522.ComIrqReg, 0x7F);
     mfrc522.PICC_HaltA();
-    cardDetected = false;
 
+    // Make a sound
     buzzer.beep(BUZZER_BEEP_DURATION_MS);
   }
 
@@ -89,6 +95,7 @@ void loop() {
 }
 
 void vApplicationIdleHook(void) {
+  loop();
 }
 
 void vApplicationTickHook(void) {
@@ -102,7 +109,7 @@ static void vTask1(void *pvParameters) {
   const TickType_t xDelay = pdMS_TO_TICKS(500);
   Led redLED(LED_RED);
 
-  Serial.println("Started Task 1");
+  logger.i(TAG, "Started Task 1");
   for(;;) {
     redLED.toggle();
     vTaskDelay(xDelay);
@@ -113,7 +120,7 @@ static void vTask2(void *pvParameters) {
   const TickType_t xDelay = pdMS_TO_TICKS(500);
   Led greenLED(LED_GREEN);
 
-  Serial.println("Started Task 2");
+  logger.i(TAG, "Started Task 2");
   for(;;) {
     greenLED.toggle();
     vTaskDelay(xDelay);
@@ -124,7 +131,7 @@ static void vTask3(void *pvParameters) {
   const TickType_t xDelay = pdMS_TO_TICKS(1000);
   Led blueLED(LED_BLUE);
 
-  Serial.println("Started Task 3");
+  logger.i(TAG, "Started Task 3");
   for(;;) {
     blueLED.toggle();
     vTaskDelay(xDelay);
@@ -133,4 +140,5 @@ static void vTask3(void *pvParameters) {
 
 static void onCardDetected(void) {
   cardDetected = true;
+  detectionCounter++;
 }
