@@ -1,5 +1,5 @@
-#ifndef Led_h
-#define Led_h
+#ifndef LED_H
+#define LED_H
 
 #include "Arduino.h"
 
@@ -16,4 +16,4 @@ private:
 
 };
 
-#endif // Led_h
+#endif // LED_H

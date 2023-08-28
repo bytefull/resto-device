@@ -1,5 +1,5 @@
-#ifndef Buzzer_h
-#define Buzzer_h
+#ifndef BUZZER_H
+#define BUZZER_H
 
 #include "Arduino.h"
 
@@ -16,4 +16,4 @@ private:
 
 };
 
-#endif // Buzzer_h
+#endif // BUZZER_H
