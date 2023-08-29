@@ -8,7 +8,7 @@
 class Payment {
 
 public:
-  enum class PaymentError {
+  enum class Error {
     Success,
     ServerError,
     InvalidOrder,
@@ -20,10 +20,10 @@ public:
   };
 
   void initiate(const Order& order);
-  void onResult(std::function<void(PaymentError)> callback);
+  void onResult(std::function<void(Error)> callback);
 
 private:
-  std::function<void(PaymentError)> resultCallback;
+  std::function<void(Error)> resultCallback;
 
 };
 

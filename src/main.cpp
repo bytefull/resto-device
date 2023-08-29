@@ -133,15 +133,15 @@ static void communicationTask(void *parameters) {
 
 
   Payment payment;
-  Order order("customer123", 123, 500, 1630850400);
+  Order order("56780afa-e02a-4f89-9a67-c70988ebd023", 2, 31, 1693175157);
 
   payment.initiate(order);
 
-  payment.onResult([](Payment::PaymentError result) {
-    if (result == Payment::PaymentError::Success) {
-      Serial.println("Payment successful!");
+  payment.onResult([](Payment::Error result) {
+    if (result == Payment::Error::Success) {
+      logger.i(TAG, "Payment successful!");
     } else {
-      Serial.println("Payment failed!");
+      logger.e(TAG, "Payment failed (result=%d)", result);
     }
   });
 

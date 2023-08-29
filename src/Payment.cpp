@@ -8,7 +8,7 @@
 #include "certificates.h"
 
 void Payment::initiate(const Order& order) {
-  PaymentError paymentResult;
+  Payment::Error paymentResult;
 
   EthernetClient tcpClient;
   SSLClient sslClient(tcpClient, TAs, (size_t)TAs_NUM, A5, SSLClient::SSL_INFO);
@@ -21,17 +21,18 @@ void Payment::initiate(const Order& order) {
   char httpStatusCode[32] = {0};
 
   const char *server = "restoken.azurewebsites.net";
+  const char *endpoint = "/api/v1/payment";
   const uint16_t port = 443;
 
-  // 0. Sanity check the order
+  // 0. Check the sanity of the order object reference
   if (&order == nullptr) {
-    paymentResult = PaymentError::InvalidOrder;
+    paymentResult = Payment::Error::InvalidOrder;
     goto callback_and_exit;
   }
 
   // 1. Connect to HTTPS server
   if (sslClient.connect(server, port) == 0) {
-    paymentResult = PaymentError::ConnectionError;
+    paymentResult = Payment::Error::ConnectionError;
     goto callback_and_exit;
   }
 
@@ -43,7 +44,9 @@ void Payment::initiate(const Order& order) {
   serializeJson(requestJsonDoc, requestJsonString);
 
   // 3. Send an HTTPS POST request to endpoint
-  sslClient.println("POST /api/v1/payment HTTP/1.1");
+  sslClient.print("POST ");
+  sslClient.print(endpoint);
+  sslClient.println(" HTTP/1.1");
   sslClient.println("User-Agent: SSLClientOverEthernet");
   sslClient.print("Host: ");
   sslClient.println(server);
@@ -54,7 +57,7 @@ void Payment::initiate(const Order& order) {
   sslClient.println(requestJsonString);
   if (sslClient.println() == 0) {
     sslClient.stop();
-    paymentResult = PaymentError::RequestError;
+    paymentResult = Payment::Error::RequestError;
     goto callback_and_exit;
   }
 
@@ -63,14 +66,14 @@ void Payment::initiate(const Order& order) {
   if (strcmp(httpStatusCode + strlen("HTTP/1.0 "), "200 OK") != 0) {
     Serial.print(F("Unexpected response: "));
     Serial.println(httpStatusCode);
-    paymentResult = PaymentError::StatusCodeError;
+    paymentResult = Payment::Error::StatusCodeError;
     goto callback_and_exit;
   }
 
   // 5. Skip HTTP response headers
   if (!sslClient.find("\r\n\r\n")) {
     sslClient.stop();
-    paymentResult = PaymentError::InvalidResponseHeaders;
+    paymentResult = Payment::Error::InvalidResponseHeaders;
     goto callback_and_exit;
   }
 
@@ -78,7 +81,7 @@ void Payment::initiate(const Order& order) {
   deserializeError = deserializeJson(responseJsonDoc, sslClient);
   if (deserializeError) {
     sslClient.stop();
-    paymentResult = PaymentError::DeserializeResponseError;
+    paymentResult = Payment::Error::DeserializeResponseError;
     goto callback_and_exit;
   }
 
@@ -87,12 +90,12 @@ void Payment::initiate(const Order& order) {
 
   // 8. Extract values from JSON response
   if (strcmp(responseJsonDoc["status"].as<const char*>(), "success") != 0) {
-    paymentResult = PaymentError::ServerError;
+    paymentResult = Payment::Error::ServerError;
     goto callback_and_exit;
   }
 
-  // 8. If we made it here then we're good
-  paymentResult = PaymentError::Success;
+  // 9. If we made it this far then we're good
+  paymentResult = Payment::Error::Success;
 
   // Raise result callback with payment result as a parameter
   callback_and_exit:
@@ -101,6 +104,6 @@ void Payment::initiate(const Order& order) {
   }
 }
 
-void Payment::onResult(std::function<void(Payment::PaymentError)> callback) {
+void Payment::onResult(std::function<void(Payment::Error)> callback) {
   resultCallback = callback;
 }
