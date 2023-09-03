@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <SPI.h>
+
 #include "MFRC522.h"
 
 #include "Reader.h"
@@ -20,19 +21,17 @@ void Reader::begin() {
 }
 
 void Reader::loop() {
-  // Look for new cards
-  if (!_mfrc522.PICC_IsNewCardPresent()) {
-    return;
-  }
+  if (_mfrc522.PICC_IsNewCardPresent() && _mfrc522.PICC_ReadCardSerial()) {
+    // Raise callback
+    if (_detectCallback) {
+      _detectCallback(_mfrc522.uid.uidByte, _mfrc522.uid.size);
+    }
 
-  // Select one of the cards
-  if (!_mfrc522.PICC_ReadCardSerial()) {
-    return;
-  }
+    // Halt PICC
+    _mfrc522.PICC_HaltA();
 
-  // Raise callback
-  if (_detectCallback) {
-    _detectCallback(_mfrc522.uid.uidByte, _mfrc522.uid.size);
+    // Stop encryption on PCD
+    _mfrc522.PCD_StopCrypto1();
   }
 }
 

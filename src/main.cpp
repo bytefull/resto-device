@@ -1,5 +1,8 @@
 #include <Arduino.h>
-#include <SPI.h>
+
+#include "STM32Ethernet.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 #include "Log.h"
 #include "Led.h"
@@ -8,21 +11,7 @@
 #include "Payment.h"
 #include "Reader.h"
 
-#include <STM32Ethernet.h>
-#include "MFRC522.h"
-
-
-#include "FreeRTOS.h"
-#include "task.h"
-#include "timers.h"
-#include "queue.h"
-#include "event_groups.h"
-
 #define SERIAL_BAUDRATE          (115200)
-
-#define MFRC522_RST_PIN          (5)
-#define MFRC522_SPI_SS_PIN       (10)
-#define MFRC522_IRQ_PIN          (1)
 
 #define BUZZER_PIN               (0)
 #define BUZZER_BEEP_DURATION_MS  (1000)
@@ -32,14 +21,8 @@ static void cardReaderTask(void *parameters);
 static void communicationTask(void *parameters);
 static void vTask3(void *parameters);
 
-static void onDetect(void);
-
-static MFRC522 mfrc522(MFRC522_SPI_SS_PIN, MFRC522_RST_PIN);
 static Buzzer buzzer(BUZZER_PIN);
 static Log logger(&Serial);
-static byte registerValue = 0x7F;
-static volatile bool cardDetected = false;
-static volatile uint32_t detectionCounter = 0;
 
 const char *TAG = "MAIN";
 
@@ -68,7 +51,8 @@ static void cardReaderTask(void *parameters) {
 
   reader.onDetect([](byte *uid, byte length) {
     logger.i(TAG, "Detected card/phone/tag");
-    Serial.print("UID: ");
+
+    Serial.print("UID:");
     for (byte i = 0; i < length; i++) {
       Serial.print(uid[i] < 0x10 ? " 0" : " ");
       Serial.print(uid[i], HEX);
@@ -136,9 +120,4 @@ static void vTask3(void *parameters) {
     blueLED.toggle();
     vTaskDelay(xDelay);
   }
-}
-
-static void onDetect(void) {
-  cardDetected = true;
-  detectionCounter++;
 }
