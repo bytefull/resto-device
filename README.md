@@ -45,10 +45,22 @@ static Led greenLED(LED_GREEN);
 static Log logger(&Serial);
 
 void setup() {
+  Payment payment;
+  Order order("56780afa-e02a-4f89-9a67-c70988ebd023", 2, 3, 1693175157);
+
   logger.i(TAG, "App started...");
 
   cardReader.registerCallback(onCardDetected);
   cardReader.run();
+
+  logger.d(TAG, "Initiating payment...");
+  payment.initiate(order, [](Payment::Error result) {
+    if (result == Payment::Error::Success) {
+      logger.i(TAG, "Payment successful!");
+    } else {
+      logger.e(TAG, "Payment failed (result=%d)", result);
+    }
+  });
 }
 
 void loop() {}

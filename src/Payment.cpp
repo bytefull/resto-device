@@ -7,7 +7,7 @@
 #include "Payment.h"
 #include "certificates.h"
 
-void Payment::initiate(const Order& order) {
+void Payment::initiate(const Order& order, std::function<void(Payment::Error)> callback) {
   Payment::Error paymentResult;
 
   EthernetClient tcpClient;
@@ -23,6 +23,9 @@ void Payment::initiate(const Order& order) {
   const char *server = "restoken.azurewebsites.net";
   const char *endpoint = "/api/v1/payment";
   const uint16_t port = 443;
+
+  // Register callback
+  _resultCallback = callback;
 
   // 0. Check the sanity of the order object reference
   if (&order == nullptr) {
@@ -64,8 +67,6 @@ void Payment::initiate(const Order& order) {
   // 4. Check for HTTP response status code
   sslClient.readBytesUntil('\r', httpStatusCode, sizeof(httpStatusCode));
   if (strcmp(httpStatusCode + strlen("HTTP/1.0 "), "200 OK") != 0) {
-    Serial.print(F("Unexpected response: "));
-    Serial.println(httpStatusCode);
     paymentResult = Payment::Error::StatusCodeError;
     goto callback_and_exit;
   }
@@ -89,7 +90,7 @@ void Payment::initiate(const Order& order) {
   sslClient.stop();
 
   // 8. Extract values from JSON response
-  if (strcmp(responseJsonDoc["status"].as<const char*>(), "success") != 0) {
+  if (strcmp(responseJsonDoc["status"].as<const char*>(), "payment success") != 0) {
     paymentResult = Payment::Error::ServerError;
     goto callback_and_exit;
   }
@@ -99,11 +100,7 @@ void Payment::initiate(const Order& order) {
 
   // Raise result callback with payment result as a parameter
   callback_and_exit:
-  if (resultCallback) {
-    resultCallback(paymentResult);
+  if (_resultCallback) {
+    _resultCallback(paymentResult);
   }
-}
-
-void Payment::onResult(std::function<void(Payment::Error)> callback) {
-  resultCallback = callback;
 }

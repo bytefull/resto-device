@@ -19,11 +19,10 @@ public:
     DeserializeResponseError,
   };
 
-  void initiate(const Order& order);
-  void onResult(std::function<void(Error)> callback);
+  void initiate(const Order& order, std::function<void(Error)> callback);
 
 private:
-  std::function<void(Error)> resultCallback;
+  std::function<void(Error)> _resultCallback;
 
 };
 

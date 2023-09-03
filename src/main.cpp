@@ -113,13 +113,16 @@ static void cardReaderTask(void *parameters) {
 }
 
 static void communicationTask(void *parameters) {
-  const TickType_t xDelay = pdMS_TO_TICKS(500);
+  const TickType_t xDelay = pdMS_TO_TICKS(3000);
   Led greenLED(LED_GREEN);
+
+  vTaskDelay(xDelay);
 
   // Static IP address to use in case the DHCP client fails to get an address
   const IPAddress staticIP(192, 168, 1, 55);
 
   // Setup ethernet with DHCP else use a static IP
+  logger.d(TAG, "Getting an IP address from LAN...");
   if(Ethernet.begin() == 0) {
     logger.e(TAG, "Failed to configure Ethernet using DHCP");
     Serial.print("Configuring Ethernet using static IP: ");
@@ -128,16 +131,16 @@ static void communicationTask(void *parameters) {
   } else {
     logger.i(TAG, "Ethernet is configured successfully using DHCP");
   }
-  Serial.print("Connected to network. IP = ");
+  logger.i(TAG, "Got an IP address");
+  Serial.print("IP: ");
   Serial.println(Ethernet.localIP());
 
 
   Payment payment;
-  Order order("56780afa-e02a-4f89-9a67-c70988ebd023", 2, 31, 1693175157);
+  Order order("f996ac47-daac-4a43-a9a6-4bc391edb317", 2, 3, 1693175157);
 
-  payment.initiate(order);
-
-  payment.onResult([](Payment::Error result) {
+  logger.d(TAG, "Initiating payment...");
+  payment.initiate(order, [](Payment::Error result) {
     if (result == Payment::Error::Success) {
       logger.i(TAG, "Payment successful!");
     } else {
