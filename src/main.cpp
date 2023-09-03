@@ -6,6 +6,7 @@
 #include "Buzzer.h"
 #include "Order.h"
 #include "Payment.h"
+#include "Reader.h"
 
 #include <STM32Ethernet.h>
 #include "MFRC522.h"
@@ -31,7 +32,7 @@ static void cardReaderTask(void *parameters);
 static void communicationTask(void *parameters);
 static void vTask3(void *parameters);
 
-static void onCardDetected(void);
+static void onDetect(void);
 
 static MFRC522 mfrc522(MFRC522_SPI_SS_PIN, MFRC522_RST_PIN);
 static Buzzer buzzer(BUZZER_PIN);
@@ -45,8 +46,8 @@ const char *TAG = "MAIN";
 void setup() {
   logger.setup(SERIAL_BAUDRATE);
 
-  // xTaskCreate(cardReaderTask, "Card Reader Task", 1024, NULL, 1, NULL);
-  xTaskCreate(communicationTask, "Communication", 5*1024, NULL, 1, NULL);
+  xTaskCreate(cardReaderTask, "Card Reader Task", 1024, NULL, 1, NULL);
+  // xTaskCreate(communicationTask, "Communication", 5*1024, NULL, 1, NULL);
   // xTaskCreate(vTask3, "Task 3", 1024, NULL, 1, NULL);
 
   vTaskStartScheduler();
@@ -63,50 +64,22 @@ void vApplicationStackOverflowHook(xTaskHandle *pxTask, signed portCHAR *pcTaskN
 static void cardReaderTask(void *parameters) {
   const TickType_t xDelay = pdMS_TO_TICKS(100);
   Led redLED(LED_RED);
-  byte byteIndex;
+  Reader reader;
 
-  SPI.begin();
-  mfrc522.PCD_Init();
-
-  // Read and printout the MFRC522 version (valid values are 0x91 and 0x92)
-  logger.i(TAG, "MFRC522 version: 0x%X", mfrc522.PCD_ReadRegister(mfrc522.VersionReg));
-
-  pinMode(MFRC522_IRQ_PIN, INPUT_PULLUP);
-
-  // Enable MFRC522 interrupt
-  registerValue = 0xA0;
-  mfrc522.PCD_WriteRegister(mfrc522.ComIEnReg, registerValue);
-
-  attachInterrupt(digitalPinToInterrupt(MFRC522_IRQ_PIN), onCardDetected, FALLING);
-
-  logger.i(TAG, "Started Card Reader Task");
-  for(;;) {
-    if (cardDetected) {
-      // Once card is detected read its UID
-      logger.i(TAG, "Card detected");
-      logger.d(TAG, "detectionCounter: %lu\r\n", detectionCounter);
-      mfrc522.PICC_ReadCardSerial();
-      Serial.print("Card UID: ");
-      for (byteIndex = 0; byteIndex < mfrc522.uid.size; byteIndex++) {
-        Serial.print(mfrc522.uid.uidByte[byteIndex] < 0x10 ? " 0" : " ");
-        Serial.print(mfrc522.uid.uidByte[byteIndex], HEX);
-      }
-      Serial.println();
-
-      // Clear pending interrupt
-      mfrc522.PCD_WriteRegister(mfrc522.ComIrqReg, 0x7F);
-      mfrc522.PICC_HaltA();
-      cardDetected = false;
-
-      // Make a sound
-      buzzer.beep(BUZZER_BEEP_DURATION_MS);
+  reader.onDetect([](byte *uid, byte length) {
+    logger.i(TAG, "Detected card/phone/tag");
+    Serial.print("UID: ");
+    for (byte i = 0; i < length; i++) {
+      Serial.print(uid[i] < 0x10 ? " 0" : " ");
+      Serial.print(uid[i], HEX);
     }
+    Serial.println();
+  });
 
-    // Activate reception
-    mfrc522.PCD_WriteRegister(mfrc522.FIFODataReg, mfrc522.PICC_CMD_REQA);
-    mfrc522.PCD_WriteRegister(mfrc522.CommandReg, mfrc522.PCD_Transceive);
-    mfrc522.PCD_WriteRegister(mfrc522.BitFramingReg, 0x87);
+  reader.begin();
 
+  for(;;) {
+    reader.loop();
     redLED.toggle();
     vTaskDelay(xDelay);
   }
@@ -165,7 +138,7 @@ static void vTask3(void *parameters) {
   }
 }
 
-static void onCardDetected(void) {
+static void onDetect(void) {
   cardDetected = true;
   detectionCounter++;
 }

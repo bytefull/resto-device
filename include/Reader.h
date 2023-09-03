@@ -8,19 +8,14 @@
 class Reader {
 
 public:
-  enum class Error {
-    Success,
-  };
-
   Reader();
   void begin();
-  MFRC522::Uid getUid();
-  void onCardDetected(std::function<void(Error)> callback);
+  void loop();
+  void onDetect(std::function<void(byte *, byte)> callback);
 
 private:
   MFRC522 _mfrc522;
-
-  std::function<void(Error)> _detectCallback;
+  std::function<void(byte *, byte)> _detectCallback;
 };
 
 #endif // READER_H

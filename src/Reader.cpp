@@ -4,15 +4,13 @@
 
 #include "Reader.h"
 
-#define MFRC522_RST_PIN          (5)
-#define MFRC522_SPI_SS_PIN       (10)
+#define MFRC522_RST_PIN    (5)
+#define MFRC522_SPI_SS_PIN (10)
 
 Reader::Reader() {
 }
 
 void Reader::begin() {
-  byte registerValue;
-
   // Initialize the SPI instance
   SPI.begin();
 
@@ -21,20 +19,23 @@ void Reader::begin() {
   _mfrc522.PCD_Init();
 }
 
-MFRC522::Uid Reader::getUid() {
-  byte byteIndex;
+void Reader::loop() {
+  // Look for new cards
+  if (!_mfrc522.PICC_IsNewCardPresent()) {
+    return;
+  }
 
-  if (_mfrc522.PICC_IsNewCardPresent() && _mfrc522.PICC_ReadCardSerial()) {
-    Serial.print("Card UID: ");
-    for (byteIndex = 0; byteIndex < _mfrc522.uid.size; byteIndex++) {
-      Serial.print(_mfrc522.uid.uidByte[byteIndex] < 0x10 ? " 0" : " ");
-      Serial.print(_mfrc522.uid.uidByte[byteIndex], HEX);
-    }
-    Serial.println();
-    _mfrc522.PICC_HaltA();
+  // Select one of the cards
+  if (!_mfrc522.PICC_ReadCardSerial()) {
+    return;
+  }
+
+  // Raise callback
+  if (_detectCallback) {
+    _detectCallback(_mfrc522.uid.uidByte, _mfrc522.uid.size);
   }
 }
 
-void Reader::onCardDetected(std::function<void(Reader::Error)> callback) {
+void Reader::onDetect(std::function<void(byte *, byte)> callback) {
   _detectCallback = callback;
 }
