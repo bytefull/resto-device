@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include "Log.h"
-#include "FreeRTOS.h"
 
 #define COLOR_MAGENTA "\033[1;35m"
 #define COLOR_CYAN    "\033[1;36m"
@@ -23,7 +22,6 @@ Log::Log(HardwareSerial *serial) {
 void Log::setup(unsigned long baudrate) {
   _serial->begin(baudrate);
   while (!(_serial->availableForWrite()));
-  _mutex = xSemaphoreCreateMutex();
 }
 
 void Log::test(const char *tag, const char *format, ...) {
@@ -67,8 +65,6 @@ void Log::e(const char *tag, const char *format, ...) {
 }
 
 void Log::printLog(const char *level, const char *tag, const char *format, va_list args) {
-  xSemaphoreTake(_mutex, portMAX_DELAY);
-
   // Get the color associated with the level
   const char *color = getColor(level);
 
@@ -79,8 +75,6 @@ void Log::printLog(const char *level, const char *tag, const char *format, va_li
 
   // Reset color
   _serial->printf("\033[0m");
-
-  xSemaphoreGive(_mutex);
 }
 
 const char* Log::getColor(const char *level) {

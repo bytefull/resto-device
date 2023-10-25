@@ -1,8 +1,6 @@
 #include <Arduino.h>
 
 #include "STM32Ethernet.h"
-#include "FreeRTOS.h"
-#include "task.h"
 #include "LiquidCrystal_I2C.h"
 
 #include "Log.h"
@@ -22,40 +20,20 @@
 #define LCD_CHARS_PER_LINE       (16)
 #define LCD_LINES                (2)
 
-static void cardReaderTask(void *parameters);
-static void communicationTask(void *parameters);
-static void vTask3(void *parameters);
-
 static const IPAddress staticIP(192, 168, 1, 55);
 
+static volatile bool initiatePayment = false;
+
 static Buzzer buzzer(BUZZER_PIN);
+static Led redLED(LED_RED);
 static Log logger(&Serial);
 LiquidCrystal_I2C lcd(LCD_I2C_ADDRESS, LCD_CHARS_PER_LINE, LCD_LINES);
+Reader reader;
 
 const char *TAG = "MAIN";
 
 void setup() {
   logger.setup(SERIAL_BAUDRATE);
-
-  xTaskCreate(cardReaderTask, "Card Reader Task", 6*1024, NULL, 1, NULL);
-  // xTaskCreate(communicationTask, "Communication", 5*1024, NULL, 1, NULL);
-  // xTaskCreate(vTask3, "Task 3", 1024, NULL, 1, NULL);
-
-  vTaskStartScheduler();
-}
-
-void loop() {
-  delay(100);
-}
-
-void vApplicationStackOverflowHook(xTaskHandle *pxTask, signed portCHAR *pcTaskName) {
-  while (true);
-}
-
-static void cardReaderTask(void *parameters) {
-  const TickType_t xDelay = pdMS_TO_TICKS(100);
-  Led redLED(LED_RED);
-  Reader reader;
 
   // Initialize LCD
   lcd.init();
@@ -65,7 +43,7 @@ static void cardReaderTask(void *parameters) {
   lcd.print("Welcome !");
 
   // Setup ethernet with DHCP else use a static IP
-  vTaskDelay(pdMS_TO_TICKS(1000));
+  delay(1000);
   logger.d(TAG, "Getting an IP address from LAN...");
   if(Ethernet.begin() == 0) {
     logger.e(TAG, "Failed to configure Ethernet using DHCP");
@@ -100,64 +78,35 @@ static void cardReaderTask(void *parameters) {
     }
     Serial.println();
     buzzer.beep(250);
+
+    initiatePayment = true;
   });
   reader.begin();
-
-  for(;;) {
-    reader.loop();
-    redLED.toggle();
-    vTaskDelay(xDelay);
-  }
 }
 
-static void communicationTask(void *parameters) {
-  const TickType_t xDelay = pdMS_TO_TICKS(3000);
-  Led greenLED(LED_GREEN);
+void loop() {
+  if (initiatePayment) {
+    Payment payment;
+    Order order("f996ac47-daac-4a43-a9a6-4bc391edb317", 2, 3, 1693175157);
 
-  vTaskDelay(xDelay);
+    logger.d(TAG, "Initiating payment...");
+    lcd.clear();
+    lcd.print("Payment...");
+    payment.initiate(order, [](Payment::Error result) {
+      lcd.clear();
+      if (result == Payment::Error::Success) {
+        logger.i(TAG, "Payment successful!");
+        lcd.print("Payment OK");
+      } else {
+        logger.e(TAG, "Payment failed (result=%d)", result);
+        lcd.print("Payment NOK");
+      }
+    });
 
-  // Static IP address to use in case the DHCP client fails to get an address
-  const IPAddress staticIP(192, 168, 1, 55);
-
-  // Setup ethernet with DHCP else use a static IP
-  logger.d(TAG, "Getting an IP address from LAN...");
-  if(Ethernet.begin() == 0) {
-    logger.e(TAG, "Failed to configure Ethernet using DHCP");
-    Serial.print("Configuring Ethernet using static IP: ");
-    Serial.println(staticIP);
-    Ethernet.begin(staticIP);
-  } else {
-    logger.i(TAG, "Ethernet is configured successfully using DHCP");
+    initiatePayment = false;
   }
-  logger.i(TAG, "Got an IP address");
-  Serial.print("IP: ");
-  Serial.println(Ethernet.localIP());
 
-  // Payment payment;
-  // Order order("f996ac47-daac-4a43-a9a6-4bc391edb317", 2, 3, 1693175157);
-
-  // logger.d(TAG, "Initiating payment...");
-  // payment.initiate(order, [](Payment::Error result) {
-  //   if (result == Payment::Error::Success) {
-  //     logger.i(TAG, "Payment successful!");
-  //   } else {
-  //     logger.e(TAG, "Payment failed (result=%d)", result);
-  //   }
-  // });
-
-  for(;;) {
-    greenLED.toggle();
-    vTaskDelay(xDelay);
-  }
-}
-
-static void vTask3(void *parameters) {
-  const TickType_t xDelay = pdMS_TO_TICKS(1000);
-  Led blueLED(LED_BLUE);
-
-  logger.i(TAG, "Started Task 3");
-  for(;;) {
-    blueLED.toggle();
-    vTaskDelay(xDelay);
-  }
+  reader.loop();
+  redLED.toggle();
+  delay(100);
 }
