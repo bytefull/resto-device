@@ -8,6 +8,7 @@ sequenceDiagram
 BUZZER ->> NUCLEO: GND...............GND
 BUZZER ->> NUCLEO: I/O...............D0
 BUZZER ->> NUCLEO: VCC...............5v
+NUCLEO ->> MFRC522: D10...............SDA
 NUCLEO ->> MFRC522: D13...............SCK
 NUCLEO ->> MFRC522: D11...............MOSI
 NUCLEO ->> MFRC522: D12...............MISO
